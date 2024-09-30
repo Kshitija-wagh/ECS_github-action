@@ -51,8 +51,8 @@ jobs:
           --family my-task \
           --network-mode awsvpc \
           --requires-compatibilities FARGATE \
-          --cpu "256" \
-          --memory "512" \
+          --cpu "1" \
+          --memory "3" \
           --execution-role-arn arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecsTaskExecutionRole \
           --container-definitions '[
             {
@@ -78,8 +78,8 @@ jobs:
           --launch-type FARGATE \
           --network-configuration '{
             "awsvpcConfiguration": {
-              "subnets": ["subnet-12345678"],
-              "securityGroups": ["sg-12345678"],
+              "subnets": ["subnet-0763e0c1ea2d9439e"],
+              "securityGroups": ["sg-0b36cb4c9ffd32ad0"],
               "assignPublicIp": "ENABLED"
             }
           }'
