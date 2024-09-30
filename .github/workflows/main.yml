@@ -36,7 +36,7 @@ jobs:
           IMAGE_TAG: ${{ github.sha }}
         run: |
           # Build a docker container and
-          # push it to ECR so that it can
+          # push it to ECR so that it 
           # be deployed to ECS.
           docker build -t $ECR_REGISTRY/mab:github.sha -f Dockerfile.yml .
           docker push $ECR_REGISTRY/mab:github.sha
