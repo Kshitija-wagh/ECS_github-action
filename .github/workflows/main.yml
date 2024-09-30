@@ -43,42 +43,44 @@ jobs:
           echo "image=$ECR_REGISTRY/mab:github.sha" >> $GITHUB_OUTPUT
       - name: Deploy to ECS
 
-on:
-  push:
-    branches:
-      - main
+        on:
+          push:
+            branches:
+              - main
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
+        jobs:
+          deploy:
+            runs-on: ubuntu-latest
 
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v2
+            steps:
+            - name: Checkout code
+              uses: actions/checkout@v2
 
-    - name: Configure AWS credentials
-      uses: aws-actions/configure-aws-credentials@v1
-      with:
-        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        aws-region: ap-south-1
+           - name: Configure AWS credentials
+             uses: aws-actions/configure-aws-credentials@v1
+             with:
+               aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+               aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+               aws-region: ap-south-1
 
-    - name: Create ECS cluster
-      run: |
-        aws ecs create-cluster --cluster-name my-cluster
+           - name: Create ECS cluster
+             run: |
+              aws ecs create-cluster --cluster-name my-cluster
 
-    - name: Register ECS task definition
-      run: |
-        echo '{
-          "family": "my-task",
-          "networkMode": "awsvpc",
-          "containerDefinitions": [
+           - name: Register ECS task definition
+             run: |
+               aws ecs register-task-definition \
+          --family my-task \
+          --network-mode awsvpc \
+          --requires-compatibilities FARGATE \
+          --cpu "256" \
+          --memory "512" \
+          --execution-role-arn arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecsTaskExecutionRole \
+          --container-definitions '[
             {
-              "name": "mab",
-              "image": "${{ secrets.ECR_IMAGE_URI }}",
+              "name": "my-container",
+              "image": "'$ECR_REGISTRY'/'$ECR_REPOSITORY':'$IMAGE_TAG'",
               "essential": true,
-              "memory": 512,
-              "cpu": 256,
               "portMappings": [
                 {
                   "containerPort": 80,
@@ -86,19 +88,24 @@ jobs:
                 }
               ]
             }
-          ],
-          "requiresCompatibilities": [
-            "FARGATE"
-          ],
-          "cpu": "256",
-          "memory": "512"
-        }' > task-definition.json
-        aws ecs register-task-definition --cli-input-json file://task-definition.json
+          ]'
 
     - name: Create ECS service
       run: |
-        aws ecs create-service --cluster my-cluster --service-name my-service --task-definition my-task --desired-count 1 --launch-type FARGATE --network-configuration '{
-          "awsvpcConfiguration": {
+        aws ecs create-service \
+          --cluster my-cluster \
+          --service-name my-service \
+          --task-definition my-task \
+          --desired-count 1 \
+          --launch-type FARGATE \
+          --network-configuration '{
+            "awsvpcConfiguration": {
+              "subnets": ["subnet-12345678"],
+              "securityGroups": ["sg-12345678"],
+              "assignPublicIp": "ENABLED"
+            }
+          }'
+
             "subnets": ["subnet-0763e0c1ea2d9439e"],
             "securityGroups": ["sg-0b36cb4c9ffd32ad0"],
             "assignPublicIp": "ENABLED"
