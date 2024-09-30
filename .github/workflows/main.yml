@@ -66,13 +66,15 @@ jobs:
                 }
               ]
             }
-          ]'
+          ]'\
+         --operating-system-family LINUX \
+         --architecture X86_64
 
       - name: Create ECS service
         run: |
          aws ecs create-service \
           --cluster my-cluster \
-          --service-name my-service2 \
+          --service-name my-service3 \
           --task-definition my-task \
           --desired-count 1 \
           --launch-type FARGATE \
