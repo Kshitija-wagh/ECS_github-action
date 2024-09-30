@@ -72,7 +72,7 @@ jobs:
         run: |
          aws ecs create-service \
           --cluster my-cluster \
-          --service-name my-service \
+          --service-name my-service2 \
           --task-definition my-task \
           --desired-count 1 \
           --launch-type FARGATE \
