@@ -41,22 +41,66 @@ jobs:
           docker build -t $ECR_REGISTRY/mab:github.sha -f Dockerfile.yml .
           docker push $ECR_REGISTRY/mab:github.sha
           echo "image=$ECR_REGISTRY/mab:github.sha" >> $GITHUB_OUTPUT
-      - name: Create ECS Cluster
-        run: |
-          aws ecs create-cluster --cluster-name dileep-cluster
-     # Step to register task definition
-      - name: Register Task Definition
-        run: |
-          aws ecs register-task-definition \
-            --family dileep-task \
-            --container-definitions '[{"name":"mab","image":"484907495344.dkr.ecr.ap-south-1.amazonaws.com/mab","portMappings":[{"containerPort":80}],"memoryReservation":128}]'
-     # Step to create ECS service
-      - name: Create ECS Service
-        run: |
-          aws ecs create-service \
-            --cluster dileep-cluster \
-            --service-name dileep-service \
-            --task-definition dileep-task \
-            --desired-count 1 \
-            --launch-type FARGATE \
-            --region ${{ env.AWS_REGION }} 
+      - name: Deploy to ECS
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v2
+
+    - name: Configure AWS credentials
+      uses: aws-actions/configure-aws-credentials@v1
+      with:
+        aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+        aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+        aws-region: ap-south-1
+
+    - name: Create ECS cluster
+      run: |
+        aws ecs create-cluster --cluster-name my-cluster
+
+    - name: Register ECS task definition
+      run: |
+        echo '{
+          "family": "my-task",
+          "networkMode": "awsvpc",
+          "containerDefinitions": [
+            {
+              "name": "mab",
+              "image": "${{ secrets.ECR_IMAGE_URI }}",
+              "essential": true,
+              "memory": 512,
+              "cpu": 256,
+              "portMappings": [
+                {
+                  "containerPort": 80,
+                  "hostPort": 80
+                }
+              ]
+            }
+          ],
+          "requiresCompatibilities": [
+            "FARGATE"
+          ],
+          "cpu": "256",
+          "memory": "512"
+        }' > task-definition.json
+        aws ecs register-task-definition --cli-input-json file://task-definition.json
+
+    - name: Create ECS service
+      run: |
+        aws ecs create-service --cluster my-cluster --service-name my-service --task-definition my-task --desired-count 1 --launch-type FARGATE --network-configuration '{
+          "awsvpcConfiguration": {
+            "subnets": ["subnet-0763e0c1ea2d9439e"],
+            "securityGroups": ["sg-0b36cb4c9ffd32ad0"],
+            "assignPublicIp": "ENABLED"
+          }
+        }'
