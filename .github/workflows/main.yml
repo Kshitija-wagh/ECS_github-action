@@ -66,11 +66,7 @@ jobs:
                 }
               ]
             }
-          ]'\
-         --runtime-platform '{
-             "operatingSystemFamily": "LINUX",
-             "cpuArchitecture": "ARM64"
-            }'
+          ]'
 
       - name: Create ECS service
         run: |
