@@ -51,8 +51,8 @@ jobs:
           --family my-task \
           --network-mode awsvpc \
           --requires-compatibilities FARGATE \
-          --cpu "1" \
-          --memory "3" \
+          --cpu "1024" \
+          --memory "3072" \
           --execution-role-arn arn:aws:iam::${{ secrets.AWS_ACCOUNT_ID }}:role/ecsTaskExecutionRole \
           --container-definitions '[
             {
