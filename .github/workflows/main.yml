@@ -41,31 +41,13 @@ jobs:
           docker build -t $ECR_REGISTRY/mab:github.sha -f Dockerfile.yml .
           docker push $ECR_REGISTRY/mab:github.sha
           echo "image=$ECR_REGISTRY/mab:github.sha" >> $GITHUB_OUTPUT
-      - name: Deploy to ECS
+      - name: Create ECS cluster
+        run: |
+          aws ecs create-cluster --cluster-name my-cluster
 
-        on:
-          push:
-            branches:
-              - main
-
-            steps:
-            - name: Checkout code
-              uses: actions/checkout@v2
-
-           - name: Configure AWS credentials
-             uses: aws-actions/configure-aws-credentials@v1
-             with:
-               aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-               aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-               aws-region: ap-south-1
-
-           - name: Create ECS cluster
-             run: |
-              aws ecs create-cluster --cluster-name my-cluster
-
-           - name: Register ECS task definition
-             run: |
-               aws ecs register-task-definition \
+      - name: Register ECS task definition
+        run: |
+         aws ecs register-task-definition \
           --family my-task \
           --network-mode awsvpc \
           --requires-compatibilities FARGATE \
@@ -86,9 +68,9 @@ jobs:
             }
           ]'
 
-    - name: Create ECS service
-      run: |
-        aws ecs create-service \
+      - name: Create ECS service
+        run: |
+         aws ecs create-service \
           --cluster my-cluster \
           --service-name my-service \
           --task-definition my-task \
@@ -101,9 +83,3 @@ jobs:
               "assignPublicIp": "ENABLED"
             }
           }'
-
-            "subnets": ["subnet-0763e0c1ea2d9439e"],
-            "securityGroups": ["sg-0b36cb4c9ffd32ad0"],
-            "assignPublicIp": "ENABLED"
-          }
-        }'
